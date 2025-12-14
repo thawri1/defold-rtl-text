@@ -1,0 +1,5 @@
+font: "/assets/fonts/B Zar Bold_0.ttf"
+material: "/builtins/fonts/font.material"
+size: 32
+all_chars: true
+characters: " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
