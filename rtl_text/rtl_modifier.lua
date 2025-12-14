@@ -1,3 +1,5 @@
+
+
 local M = {}
 
 local unicode = require "rtl_text.unicode"
@@ -7,7 +9,7 @@ local format = string.format
 local byte   = string.byte
 local char   = string.char
 
--- UTF8 char -> hex bytes
+-- UTF8 char -> hex bytes (lowercase)
 local function toHex(str)
     return (str:gsub(".", function(c)
         return format("%02X", byte(c))
@@ -32,6 +34,18 @@ local function splitToHexChars(str)
     return t
 end
 
+-- UTF-8 iterator (returns full UTF-8 chars)
+local function utf8_iter(s)
+    local i = 1
+    return function()
+        if i > #s then return nil end
+        local c = s:match("[%z\1-\127\194-\244][\128-\191]*", i)
+        if not c then return nil end
+        i = i + #c
+        return c
+    end
+end
+
 -- Detect if string has any Arabic/Persian letters (U+0600..U+06FF)
 local function has_arabic_persian(s)
     -- UTF-8 leading bytes for Arabic block commonly: D8, D9, DA, DB
@@ -44,9 +58,31 @@ local function has_arabic_persian(s)
     return false
 end
 
--- check space / punctuation (boundaries)
+-- boundaries
+local ZWNJ_HEX = "e2808c" -- نیم‌فاصله (U+200C)
+
+local function is_pua_placeholder_hex(h)
+    -- PUA placeholders we generate are U+E000..U+E0FF => UTF-8 starts with EE 80 xx
+    return type(h) == "string" and h:sub(1, 4) == "ee80"
+end
+
+-- check space / punctuation / whitespace (boundaries)
 local function is_space_or_symbol(x)
     if not x then return true end
+
+    -- Treat all ASCII control/whitespace (00..20) as boundary: tab/newline/etc
+    if #x == 2 then
+        local v = tonumber(x, 16)
+        if v and v <= 0x20 then
+            return true
+        end
+    end
+
+    -- Treat ZWNJ as boundary for joining purposes
+    if x == ZWNJ_HEX then
+        return true
+    end
+
     if x == unicode.space then return true end
     for _, s in ipairs(unicode.symbols) do
         if x == s then return true end
@@ -68,15 +104,9 @@ local RIGHT_JOIN_ONLY = {
     ["d988"]=true, -- و
 }
 
-
-local function is_pua_placeholder_hex(h)
-  -- PUA placeholders we generate are U+E000..U+E0FF
-  -- UTF-8 for that starts with: EE 80 xx  (hex: "ee80..")
-  return type(h) == "string" and h:sub(1,4) == "ee80"
-end
-
 local function can_prev_connect_to_curr(prev)
     if not prev then return false end
+    if is_pua_placeholder_hex(prev) then return false end
     if is_space_or_symbol(prev) then return false end
     if RIGHT_JOIN_ONLY[prev] then return false end
     return true
@@ -85,66 +115,82 @@ end
 local function can_curr_connect_to_next(curr, nextc)
     if RIGHT_JOIN_ONLY[curr] then return false end
     if not nextc then return false end
-
-    -- NEW: treat placeholder as a boundary
     if is_pua_placeholder_hex(nextc) then return false end
-
     if is_space_or_symbol(nextc) then return false end
     return true
 end
 
--- Identify ASCII LTR char (English/digits and common separators)
-local function is_ltr_char(c)
-    local b = c:byte()
-    if not b then return false end
-    return (b >= 48 and b <= 57)   -- 0-9
-        or (b >= 65 and b <= 90)   -- A-Z
-        or (b >= 97 and b <= 122)  -- a-z
-        or c == "." or c == "_" or c == "-" or c == "+" or c == ":" or c == "/" or c == "%" -- common
-end
+-- ---- Mixed RTL/LTR handling ----
 
--- We need placeholders that survive shaping/reverse:
--- Use Private Use Area U+E000.. to mark LTR phrases
+-- PUA placeholder generator (no utf8 dependency)
 local function pua_char(n)
-    -- create utf8 for U+E000 + n (n >= 1)
     local code = 0xE000 + n
-    -- UTF-8 encode manually (no utf8 dependency):
-    -- U+E000..U+FFFF => 3-byte: 1110xxxx 10xxxxxx 10xxxxxx
     local b1 = 0xE0 + math.floor(code / 0x1000)
     local b2 = 0x80 + (math.floor(code / 0x40) % 0x40)
     local b3 = 0x80 + (code % 0x40)
     return string.char(b1, b2, b3)
 end
 
--- Extract LTR phrases and replace them with PUA placeholders.
--- Also expands the LTR phrase to include adjacent spaces ONLY if it is
--- sandwiched inside RTL text, to keep "FPS: 60" together.
+-- Decide if a UTF-8 char should be treated as part of an LTR phrase:
+-- English letters, ASCII digits, separators, PLUS Persian/Arabic digits.
+local function is_ltr_char_utf8(ch)
+    local h = toHex(ch)
+
+    -- ASCII byte
+    if #h == 2 then
+        local b = tonumber(h, 16)
+        if (b >= 48 and b <= 57) or (b >= 65 and b <= 90) or (b >= 97 and b <= 122) then
+            return true
+        end
+        if ch == "." or ch == "_" or ch == "-" or ch == "+" or ch == ":" or ch == "/" or ch == "%" then
+            return true
+        end
+        return false
+    end
+
+    -- Persian digits ۰..۹ : DBB0..DBB9
+    if h:match("^dbb[0-9]$") then
+    return true
+end
+
+    -- Arabic-Indic digits ٠..٩ : D9A0..D9A9
+    if h:sub(1, 3) == "d9a" then
+        local last = tonumber(h:sub(4, 4), 16)
+        if last and last >= 0 and last <= 9 then return true end
+    end
+
+    return false
+end
+
+-- Extract LTR phrases (including Persian/Arabic digits) and replace with placeholders
 local function extract_ltr_phrases(s)
     local phrases = {}
     local out = {}
 
-    local i = 1
-    while i <= #s do
-        local c = s:sub(i, i)
+    -- Build UTF-8 char array
+    local chars = {}
+    for ch in utf8_iter(s) do
+        chars[#chars + 1] = ch
+    end
 
-        if is_ltr_char(c) then
+    local i = 1
+    while i <= #chars do
+        local ch = chars[i]
+
+        if is_ltr_char_utf8(ch) then
             local j = i
-            while j <= #s and is_ltr_char(s:sub(j, j)) do
+            while j <= #chars and is_ltr_char_utf8(chars[j]) do
                 j = j + 1
             end
 
-            -- include spaces between LTR chunks like "FPS:" + " " + "60"
-            -- keep consuming sequences of: spaces + LTR
+            -- include spaces between LTR chunks like "FPS:" + " " + "60" OR "۱۰ روز"
             local k = j
-            while k <= #s do
-                local cc = s:sub(k, k)
-                if cc == " " then
+            while k <= #chars do
+                if chars[k] == " " then
                     local t = k + 1
-                    if t <= #s and is_ltr_char(s:sub(t, t)) then
-                        -- consume space
+                    if t <= #chars and is_ltr_char_utf8(chars[t]) then
                         k = t
-                        -- consume next LTR run
-                        while k <= #s and is_ltr_char(s:sub(k, k)) do
+                        while k <= #chars and is_ltr_char_utf8(chars[k]) do
                             k = k + 1
                         end
                     else
@@ -155,13 +201,18 @@ local function extract_ltr_phrases(s)
                 end
             end
 
-            local phrase = s:sub(i, k - 1)
+            local phrase_parts = {}
+            for p = i, k - 1 do
+                phrase_parts[#phrase_parts + 1] = chars[p]
+            end
+            local phrase = table.concat(phrase_parts)
+
             phrases[#phrases + 1] = phrase
             out[#out + 1] = pua_char(#phrases)
 
             i = k
         else
-            out[#out + 1] = c
+            out[#out + 1] = ch
             i = i + 1
         end
     end
@@ -173,21 +224,21 @@ local function restore_ltr_phrases(s, phrases)
     if not phrases or #phrases == 0 then return s end
     for idx, phrase in ipairs(phrases) do
         local ph = pua_char(idx)
-        -- plain replace (PUA placeholder is unique)
         s = s:gsub(ph, phrase)
     end
     return s
 end
 
+-- ---- Main ----
 function M.modifierToArab(str)
     if type(str) ~= "string" then return str end
 
-    -- If pure LTR, do nothing (prevents "Version 1.2.3" => "1.2.3 Version")
+    -- If pure LTR, do nothing
     if not has_arabic_persian(str) then
         return str
     end
 
-    -- Protect LTR phrases in mixed text
+    -- Protect LTR phrases in mixed text (English + numbers + Persian/Arabic digits)
     local protected, phrases = extract_ltr_phrases(str)
 
     -- Shape RTL (two-pass)
@@ -201,7 +252,7 @@ function M.modifierToArab(str)
         if not map then
             out[i] = curr
         else
-            local prev = base[i - 1]
+            local prev  = base[i - 1]
             local nextc = base[i + 1]
 
             local join_prev = can_prev_connect_to_curr(prev)

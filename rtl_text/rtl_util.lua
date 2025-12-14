@@ -2,49 +2,72 @@ local M = {}
 
 local modifier = require("rtl_text.rtl_modifier")
 
-
-local function wrap_rtl_text(text)
+-- Split text into lines while preserving empty lines
+local function split_lines_keep_empty(text)
     local lines = {}
-    for line in text:gmatch("[^\r\n]+") do
-        table.insert(lines, modifier.modifierToArab(line))
+    text = text:gsub("\r\n", "\n") -- normalize Windows newlines
+
+    local start = 1
+    while true do
+        local nl = text:find("\n", start, true)
+        if not nl then
+            table.insert(lines, text:sub(start)) -- last line (can be empty)
+            break
+        end
+        table.insert(lines, text:sub(start, nl - 1)) -- can be empty
+        start = nl + 1
+    end
+    return lines
+end
+
+-- RTL each line individually, preserving empty lines
+function M.wrap_rtl_text(text)
+    local lines = split_lines_keep_empty(text)
+    for i = 1, #lines do
+        if lines[i] ~= "" then
+            lines[i] = modifier.modifierToArab(lines[i])
+        end
+        -- empty line stays empty => paragraph spacing preserved
     end
     return table.concat(lines, "\n")
 end
 
-function M.modifyMultiLineTextToTextNode(text_node, text)
+function M.modify_multi_line_text_to_text_node(text_node, text)
     local font_name = gui.get_font(text_node)
     local font = gui.get_font_resource(font_name)
+    local node_width = gui.get_size(text_node).x
 
+    local input_lines = split_lines_keep_empty(text)
+    local out_lines = {}
 
+    for _, raw_line in ipairs(input_lines) do
+        -- preserve empty lines
+        if raw_line == "" then
+            out_lines[#out_lines + 1] = ""
+        else
+            local metrics = resource.get_text_metrics(font, raw_line)
 
-    local text_node_size = gui.get_size(text_node)
-    local text_node_width = text_node_size.x
-
-
-    local metrics = resource.get_text_metrics(font, text)
-    print("text metrics width: " .. metrics.width)
-    print("text metrics height: " .. metrics.height)
-
-    local new_text = ""
-
-    if metrics.width > text_node_width then
-        for w in text:gmatch("%S+") do
-            local tmp_text = new_text .. " " .. w
-            local metrics = resource.get_text_metrics(font, tmp_text)
-            if metrics.width > text_node_width then
-                new_text = new_text .. "\n" .. w
+            if metrics.width > node_width then
+                -- wrap this single line into multiple lines
+                local wrapped = ""
+                for w in raw_line:gmatch("%S+") do
+                    local tmp = (wrapped == "") and w or (wrapped .. " " .. w)
+                    local m = resource.get_text_metrics(font, tmp)
+                    if m.width > node_width then
+                        wrapped = wrapped .. "\n" .. w
+                    else
+                        wrapped = tmp
+                    end
+                end
+                -- now shape each wrapped line separately
+                out_lines[#out_lines + 1] = M.wrap_rtl_text(wrapped)
             else
-                new_text = tmp_text
+                out_lines[#out_lines + 1] = modifier.modifierToArab(raw_line)
             end
         end
-        new_text = wrap_rtl_text(new_text)
-    else
-        new_text = modifier.modifierToArab(text)
     end
 
-
-
-    gui.set_text(text_node, new_text)
+    gui.set_text(text_node, table.concat(out_lines, "\n"))
 end
 
 return M

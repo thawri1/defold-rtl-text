@@ -1,5 +1,5 @@
 local rtl_util = require("rtl_text.rtl_util")
-local modifier = require("rtl_text.rtl_modifier")
+local rtl_text = require("rtl_text.rtl_modifier")
 
 
 
@@ -7,38 +7,45 @@ function init(self)
 	local text_node1 = gui.get_node("test_text_1")
 	local text_node2 = gui.get_node("test_text_2")
 	local text_node3 = gui.get_node("test_text_3")
-
-	local text1 = "این یک فارسی ساز برای Defold است."
-	local text2 = "بازی باید به صورت FPS: 60 اجرا شود"
-	local text3 = " گچ های پدر در ماشین ژیان گم شد!"
+	local text_node4 = gui.get_node("test_text_4")
 
 
-	local rtl1 = modifier.modifierToArab(text1)
-	local rtl2 = modifier.modifierToArab(text2)
-	local rtl3 = modifier.modifierToArab(text3)
+	local text1 = "بازی باید به صورت FPS: 60 اجرا شود"
+	local text2 = " گچ های پدر در ماشین ژیان گم شد!"
+
+	local multi_line_text_1 = [[
+	این یک فارسی ساز برای Defold است.
+	بازی باید به صورت FPS: 60 اجرا شود
+	گچ های پدر در ماشین ژیان گم شد!
+	]]
+
+	local multi_line_text_2 = "همچنین بر اساس پیش‌بینی هواشناسی، ایران طی ۱۰ روز آینده شاهد بارش سنگین برف خواهد بود."
 
 
-	print(rtl1)
-	print(rtl2)
-	print(rtl3)
 
-	gui.set_text(text_node1, rtl1)
-	gui.set_text(text_node2, rtl2)
-	gui.set_text(text_node3, rtl3)
+	local rtl2 = rtl_text.modifierToArab(text1)
+	local rtl3 = rtl_text.modifierToArab(text2)
 
 
-	-- rtl_util.modifyMultiLineTextToTextNode(text_node, text1)
-	 
+	-- print(rtl1)
+	-- print(rtl2)
+	-- print(rtl3)
+
+	-- -- gui.set_text(text_node1, rtl1)
+	gui.set_text(text_node1, rtl2)
+	gui.set_text(text_node2, rtl3)
+
+
+	rtl_util.modify_multi_line_text_to_text_node(text_node3, multi_line_text_1)
+	rtl_util.modify_multi_line_text_to_text_node(text_node4, multi_line_text_2)
 end
 
-
-
 function update(self, dt)
-	
+
 end
 
 function on_message(self, message_id, message, sender)
-	
+
 end
 
 function on_input(self, action_id, action)
@@ -46,5 +53,5 @@ function on_input(self, action_id, action)
 end
 
 function on_reload(self)
-	
+
 end
