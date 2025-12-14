@@ -58,6 +58,48 @@ local function has_arabic_persian(s)
     return false
 end
 
+
+local function is_arabic_diacritic_hex(h)
+    -- Arabic combining marks (harakat) are mainly:
+    -- U+064B..U+065F  => UTF-8: D9 8B .. D9 9F  => hex: d98b..d99f
+    -- U+0670 (dagger alif) => UTF-8: D9 B0 => hex: d9b0
+    if type(h) ~= "string" or #h ~= 4 then return false end
+    if h == "d9b0" then return true end
+    if h:sub(1,2) == "d9" then
+        local lo = tonumber(h:sub(3,4), 16)
+        if lo and lo >= 0x8B and lo <= 0x9F then
+            return true
+        end
+    end
+    return false
+end
+
+
+local function prev_real(base, i)
+    local j = i - 1
+    while j >= 1 do
+        local h = base[j]
+        if not is_arabic_diacritic_hex(h) then
+            return h
+        end
+        j = j - 1
+    end
+    return nil
+end
+
+local function next_real(base, i)
+    local j = i + 1
+    while j <= #base do
+        local h = base[j]
+        if not is_arabic_diacritic_hex(h) then
+            return h
+        end
+        j = j + 1
+    end
+    return nil
+end
+
+
 -- boundaries
 local ZWNJ_HEX = "e2808c" -- نیم‌فاصله (U+200C)
 
@@ -230,7 +272,7 @@ local function restore_ltr_phrases(s, phrases)
 end
 
 -- ---- Main ----
-function M.modifierToArab(str)
+function M.get_rtl_text(str)
     if type(str) ~= "string" then return str end
 
     -- If pure LTR, do nothing
@@ -252,8 +294,8 @@ function M.modifierToArab(str)
         if not map then
             out[i] = curr
         else
-            local prev  = base[i - 1]
-            local nextc = base[i + 1]
+            local prev  = prev_real(base, i)
+            local nextc = next_real(base, i)
 
             local join_prev = can_prev_connect_to_curr(prev)
             local join_next = can_curr_connect_to_next(curr, nextc)

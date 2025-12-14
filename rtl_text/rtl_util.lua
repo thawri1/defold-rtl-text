@@ -25,7 +25,7 @@ function M.wrap_rtl_text(text)
     local lines = split_lines_keep_empty(text)
     for i = 1, #lines do
         if lines[i] ~= "" then
-            lines[i] = modifier.modifierToArab(lines[i])
+            lines[i] = modifier.get_rtl_text(lines[i])
         end
         -- empty line stays empty => paragraph spacing preserved
     end
@@ -62,7 +62,7 @@ function M.modify_multi_line_text_to_text_node(text_node, text)
                 -- now shape each wrapped line separately
                 out_lines[#out_lines + 1] = M.wrap_rtl_text(wrapped)
             else
-                out_lines[#out_lines + 1] = modifier.modifierToArab(raw_line)
+                out_lines[#out_lines + 1] = modifier.get_rtl_text(raw_line)
             end
         end
     end

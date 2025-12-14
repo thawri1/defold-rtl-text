@@ -10,26 +10,26 @@ fonts {
 nodes {
   position {
     x: 360.0
-    y: 1061.0
+    y: 1054.0
   }
   size {
     x: 640.0
-    y: 200.0
+    y: 100.0
   }
   type: TYPE_TEXT
   text: "hello"
-  font: "estedad"
+  font: "zar"
   id: "test_text_1"
   inherit_alpha: true
 }
 nodes {
   position {
     x: 360.0
-    y: 815.0
+    y: 915.0
   }
   size {
     x: 640.0
-    y: 200.0
+    y: 100.0
   }
   type: TYPE_TEXT
   text: "hello"
@@ -40,7 +40,7 @@ nodes {
 nodes {
   position {
     x: 360.0
-    y: 451.0
+    y: 726.0
   }
   size {
     x: 640.0
@@ -55,7 +55,7 @@ nodes {
 nodes {
   position {
     x: 360.0
-    y: 188.0
+    y: 494.0
   }
   size {
     x: 640.0
