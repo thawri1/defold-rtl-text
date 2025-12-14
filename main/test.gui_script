@@ -8,8 +8,8 @@ function init(self)
 	local text_node2 = gui.get_node("test_text_2")
 	local text_node3 = gui.get_node("test_text_3")
 
-	local text1 = "این یک فارسی ساز برای دیفولد است."
-	local text2 = "احترام به پدر و مادر واجب است"
+	local text1 = "این یک فارسی ساز برای Defold است."
+	local text2 = "بازی باید به صورت FPS: 60 اجرا شود"
 	local text3 = " گچ های پدر در ماشین ژیان گم شد!"
 
 
