@@ -2,6 +2,10 @@ local M = {}
 
 M.space = "20"
 
+-- Zero width joiners (important for Persian)
+M.zwnj = "e2808c" -- U+200C (semi-space / نیم‌فاصله)
+M.zwj  = "e2808d" -- U+200D (optional)
+
 -- punctuation / digits act as boundaries
 M.symbols = {
   "20","21","22","23","24","25","26","27","28","29",
@@ -10,7 +14,8 @@ M.symbols = {
   "3a","3b","3c","3d","3e","3f","40",
   "5b","5c","5d","5e","5f","60",
   "7b","7c","7d","7e",
-  "d88c","d89b","d89f" -- ، ؛ ؟
+  "d88c","d89b","d89f", -- ، ؛ ؟
+  "e2808c","e2808d"     -- ZWNJ / ZWJ (treat as boundaries)
 }
 
 -- Arabic + Persian letters (presentation forms)

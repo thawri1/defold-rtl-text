@@ -63,7 +63,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "hello"
-  font: "zar"
+  font: "estedad"
   id: "test_text_4"
   inherit_alpha: true
 }
