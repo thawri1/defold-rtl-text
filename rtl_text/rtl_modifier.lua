@@ -123,6 +123,8 @@ local RIGHT_JOIN_ONLY = {
     ["d8b2"]=true, -- ز
     ["da98"]=true, -- ژ
     ["d988"]=true, -- و
+    ["d8a9"]=true, -- ة
+    ["d8a1"]=true, -- ء hamza
 }
 
 local function can_prev_connect_to_curr(prev)
@@ -239,6 +241,21 @@ local function restore_ltr_phrases(s, phrases)
     return s
 end
 
+local function mirror_pairs_utf8(s)
+    -- swap bracket-like characters after reversing
+    local map = {
+        ["("] = ")", [")"] = "(",
+        ["["] = "]", ["]"] = "[",
+        ["{"] = "}", ["}"] = "{",
+        ["<"] = ">", [">"] = "<",
+        ["«"] = "»", ["»"] = "«",
+    }
+    return (s:gsub("[%(%)[%]{}<>«»]", function(ch)
+        return map[ch] or ch
+    end))
+end
+
+
 function M.get_rtl_text(str)
     if type(str) ~= "string" then return str end
     if not has_arabic_persian(str) then return str end
@@ -286,6 +303,7 @@ function M.get_rtl_text(str)
     end
 
     local shaped = rev.utf8reverse(fromHex(hex))
+    shaped = mirror_pairs_utf8(shaped)
     shaped = restore_ltr_phrases(shaped, phrases)
     return shaped
 end

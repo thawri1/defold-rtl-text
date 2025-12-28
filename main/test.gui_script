@@ -8,26 +8,30 @@ function init(self)
 	local text_node2 = gui.get_node("test_text_2")
 	local text_node3 = gui.get_node("test_text_3")
 	local text_node4 = gui.get_node("test_text_4")
+	local text_node5 = gui.get_node("test_text_5")
 
 
 	local text1 = "بِسْمِ اللَّـهِ الرَّحْمَـٰنِ الرَّحِيمِ"
 	local text2 = " گچ های پدر در ماشین ژیان گم شد!"
+	local text3 = "لعبة جديدة  قراءةُ القائمة. القائمة تحتوي علي عناصر كثيرة"
 
 	local multi_line_text_1 = [[
 	این یک فارسی ساز برای Defold است.
 	بازی باید به صورت FPS: 60 اجرا شود
 	]]
 
-	local multi_line_text_2 = "همچنین بر اساس پیش‌بینی هواشناسی، ایران طی ۱۰ روز آینده شاهد بارش سنگین برف خواهد بود."
+	local multi_line_text_2 = "همچنین بر اساس پیش‌بینی هواشناسی، ایران طی ۱۰ روز آینده شاهد بارش (سنگین) برف خواهد بود."
 
 
 
 	local rtl1 = rtl_text.get_rtl_text(text1)
-	local rtl3 = rtl_text.get_rtl_text(text2)
+	local rtl2 = rtl_text.get_rtl_text(text2)
+	local rtl3 = rtl_text.get_rtl_text(text3)
 
 
 	gui.set_text(text_node1, rtl1)
-	gui.set_text(text_node2, rtl3)
+	gui.set_text(text_node2, rtl2)
+	gui.set_text(text_node5, rtl3)
 
 
 	rtl_util.modify_multi_line_text_to_text_node(text_node3, multi_line_text_1)

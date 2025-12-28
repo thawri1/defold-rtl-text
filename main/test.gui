@@ -10,7 +10,7 @@ fonts {
 nodes {
   position {
     x: 360.0
-    y: 1054.0
+    y: 1106.0
   }
   size {
     x: 640.0
@@ -25,7 +25,7 @@ nodes {
 nodes {
   position {
     x: 360.0
-    y: 915.0
+    y: 969.0
   }
   size {
     x: 640.0
@@ -40,7 +40,7 @@ nodes {
 nodes {
   position {
     x: 360.0
-    y: 726.0
+    y: 783.0
   }
   size {
     x: 640.0
@@ -55,7 +55,7 @@ nodes {
 nodes {
   position {
     x: 360.0
-    y: 494.0
+    y: 551.0
   }
   size {
     x: 640.0
@@ -65,6 +65,22 @@ nodes {
   text: "hello"
   font: "estedad"
   id: "test_text_4"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360.0
+    y: 189.0
+  }
+  size {
+    x: 640.0
+    y: 300.0
+  }
+  type: TYPE_TEXT
+  text: "hello"
+  font: "estedad"
+  id: "test_text_5"
+  line_break: true
   inherit_alpha: true
 }
 material: "/builtins/materials/gui.material"

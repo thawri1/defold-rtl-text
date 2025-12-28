@@ -74,6 +74,18 @@ M.hex = {
   d988 = { isolated="efbbad", first="efbbad", middle="efbbad", last="efbbae" }, -- و
   d98a = { isolated="efbbb1", first="efbbb3", middle="efbbb4", last="efbbb2" }, -- ي
   db8c = { isolated="efafbc", first="efafbe", middle="efafbf", last="efafbd" }, -- ی فارسی
+
+
+  -- Hamza (ء) U+0621 (non-joining, keep as-is)
+  d8a1 = { isolated="d8a1", first="d8a1", middle="d8a1", last="d8a1" }, -- ء
+
+
+   -- Yeh with hamza above (ئ) U+0626
+  d8a6 = { isolated="efba89", first="efba8b", middle="efba8c", last="efba8a" }, -- ئ
+
+  -- Teh Marbuta (ة) U+0629
+  d8a9 = { isolated="efba93", first="efba93", middle="efba93", last="efba94" }, -- ة
+
 }
 
 return M
